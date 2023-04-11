@@ -1,0 +1,16 @@
+{
+  "name": "replace-urls",
+  "version": "1.0.0",
+  "description": "",
+  "bin": {
+    "replace-urls": "bin/replace-urls"
+  },
+  "lsd:module": true,
+  "author": "Antoine LOZACH",
+  "license": "ISC",
+  "dependencies": {
+    "joycon": "^3.1.1",
+    "node-html-parser": "^6.1.5",
+    "replace-in-file": "^6.3.5"
+  }
+}

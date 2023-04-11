@@ -1,0 +1,76 @@
+#! /usr/bin/env node
+const replace = require('replace-in-file');
+const JoyCon = require('joycon')
+const fs = require("fs");
+const HTMLParser = require('node-html-parser');
+const http = require("http");
+const https = require("https");
+const {Transform: Stream} = require("stream");
+
+function downloadImageFromURL(url, filename) {
+    let client = http;
+
+    if (url.toString().indexOf("https") === 0) {
+        client = https;
+    }
+    client.request(url, function (response) {
+        let data = new Stream();
+
+        response.on('data', function (chunk) {
+            data.push(chunk);
+        });
+
+        response.on('end', function () {
+            fs.writeFileSync(filename, data.read());
+        });
+    }).end();
+
+}
+
+async function main() {
+    const joycon = new JoyCon({
+        files: ['replaceUrls.config.json'],
+    })
+
+    const {data: configData, path: configPath} = await joycon.load()
+
+    if (configPath) {
+        const htmlFile = fs.readFileSync(configData.html_file, 'utf8');
+        const root = HTMLParser.parse(htmlFile);
+        let dir = configData.out_directory;
+
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+        }
+
+        root.getElementsByTagName('img').forEach((img, index) => {
+            if (img.getAttribute('src').startsWith(configData.image_prefix)) {
+                const imageSrc = img.getAttribute('src');
+                const imageSrcSet = 'srcset="' + img.getAttribute('srcset') + '"';
+                replace.sync({
+                    files: configData.html_file,
+                    from: [imageSrc, imageSrcSet],
+                    to: [`./images/static/image_${index}.png`, '']
+                });
+                downloadImageFromURL(imageSrc, `${configData.out_directory}/image_${index}.png`);
+            }
+        })
+
+        root.getElementsByTagName('video').forEach((video, index) => {
+            if (video.getAttribute('src').startsWith(configData.image_prefix)) {
+                const imageSrc = video.getAttribute('src');
+                replace.sync({
+                    files: configData.html_file,
+                    from: imageSrc,
+                    to: `./images/static/video_${index}.mp4`
+                });
+                downloadImageFromURL(imageSrc, `${configData.out_directory}/video_${index}.mp4`);
+            }
+        })
+    }
+}
+
+main().catch((error) => {
+    console.error(error)
+    process.exit(1)
+})
