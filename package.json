@@ -3,9 +3,6 @@
   "version": "1.0.1",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "replace-urls": "node index.js"
-  },
   "bin": {
     "replace-urls": "index.js"
   },
