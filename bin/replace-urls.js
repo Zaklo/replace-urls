@@ -71,7 +71,7 @@ async function main() {
 
 module.exports = (yargs) => {
     yargs.command({
-        command: 'download',
+        command: 'replace-urls',
         describe: 'Download media files from an HTML file',
         handler: main,
     });
