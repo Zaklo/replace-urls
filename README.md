@@ -1,4 +1,4 @@
-# @zaklo/replace-urls
+# @zaklo/replace-urls.js
 
 ## About
 
@@ -15,7 +15,7 @@ will be : `image_index_0.jpg`
 Start the development server on 
 
 ```bash
-npm install replace-urls
+npm install replace-urls.js
 ```
 
 Create a config file in your project root folder, named `config.js`
@@ -43,7 +43,7 @@ Then, in your `package.json` file, add a script to run the lib after the build
 ```json
 {
   "scripts": {
-    "generate": "your_generate_command && replace-urls --config ./config.js"
+    "generate": "your_generate_command && replace-urls.js --config ./config.js"
   }
 }
 ```

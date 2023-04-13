@@ -63,9 +63,11 @@ async function main() {
         const mediaFilename = `media_${i}${mediaExt}`;
         const mediaDestPath = path.resolve(mediaDir, mediaFilename);
 
+        console.log('Downloading images...')
         // Download the file
         await downloadFile(mediaSrc, mediaDestPath);
 
+        console.log('Replacing URLs...')
         // Replace the URL in the HTML with the downloaded file path
         replace({files: htmlPath, from: mediaSrc, to: `./medias/${mediaFilename}`});
     }

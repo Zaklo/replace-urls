@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "",
   "bin": {
-    "replace-urls": "bin/replace-urls"
+    "replace-urls": "/bin/replace-urls.js"
   },
   "lsd:module": true,
   "author": "Antoine LOZACH",
