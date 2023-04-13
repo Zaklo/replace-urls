@@ -2,6 +2,8 @@
 
 ## About
 
+check the github repo: https://github.com/Zaklo/replace-urls
+
 This lib is used to generate static medias urls, from a builded project.
 
 example: `https://res.cloudinary.com/zaklo/image/upload/v1621234567/my-image.jpg`
@@ -16,33 +18,32 @@ Start the development server on
 npm install replace-urls
 ```
 
-Create a config file in your project root folder, named `replace-urls.config.json`
+Create a config file in your project root folder, named `config.js`
 
 
 | Option name   | type                                                            |
 |---------------|-----------------------------------------------------------------|
-| html_file     | The html file to crawl                                          |
-| image_prefix  | The prefixes of your images (ex: `https://res.cloudinary.com/`) |
-| out_directory | The directory where the static images will be                   |
+| htmlPath     | The html file to crawl                                          |
+| mediaSrcSelector  | The prefixes of your images (ex: `https://res.cloudinary.com/`) |
+| mediaDir | The directory where the static images will be                   |
 
 example: 
 
-```json
-//replace-urls.config.json
-{
-  "html_file": "dist/index.html",
-  "image_prefix": "https://res.cloudinary.com/",
-  "out_directory": "dist/images/static/"
+```js
+//config.js
+module.exports = {
+  htmlPath: '.output/public/china/index.html',
+  mediaSrcSelector: 'img[src^="https://res.cloudinary.com"], video[src^="https://res.cloudinary.com"]',
+  mediaDir: '.output/public/china/medias'
 }
 ```
 
 Then, in your `package.json` file, add a script to run the lib after the build
 
 ```json
-//package.json
 {
   "scripts": {
-    "build": "your_build_command && replace-urls"
+    "generate": "your_generate_command && replace-urls --config ./config.js"
   }
 }
 ```
