@@ -2,9 +2,8 @@
   "name": "replace-urls",
   "version": "1.0.1",
   "description": "",
-  "main": "index.js",
   "bin": {
-    "replace-urls": "index.js"
+    "replace-urls": "bin/replace-urls"
   },
   "lsd:module": true,
   "author": "Antoine LOZACH",
