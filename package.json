@@ -1,9 +1,13 @@
 {
-  "name": "replace-urls",
+  "name": "@zaklo/replace-urls",
   "version": "1.0.0",
   "description": "",
+  "main": "index.js",
+  "scripts": {
+    "replace-urls": "node index.js"
+  },
   "bin": {
-    "replace-urls": "bin/replace-urls"
+    "replace-urls": "index.js"
   },
   "lsd:module": true,
   "author": "Antoine LOZACH",
