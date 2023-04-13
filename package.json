@@ -1,6 +1,6 @@
 {
-  "name": "@zaklo/replace-urls",
-  "version": "1.0.0",
+  "name": "replace-urls",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
