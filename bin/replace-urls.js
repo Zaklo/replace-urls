@@ -40,7 +40,7 @@ const downloadFile = promisify((url, destPath, cb) => {
 
 async function replaceUrls() {
     // Read the HTML file
-    const htmlPath = require(path.resolve(process.cwd(), config.htmlPath));
+    const htmlPath = path.resolve(process.cwd(), config.htmlPath);
     const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
     // Parse the HTML using Cheerio
@@ -50,7 +50,7 @@ async function replaceUrls() {
     const mediaElements = $(config.mediaSrcSelector);
 
     // Create the 'medias' directory if it does not exist
-    const mediaDir = require(path.resolve(process.cwd(), config.mediaDir));
+    const mediaDir = path.resolve(process.cwd(), config.mediaDir);
     if (!fs.existsSync(mediaDir)) {
         fs.mkdirSync(mediaDir);
     }

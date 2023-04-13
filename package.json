@@ -1,6 +1,6 @@
 {
   "name": "replace-urls",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "",
   "bin": {
     "replace-urls": "/bin/replace-urls.js"
