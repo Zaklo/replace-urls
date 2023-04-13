@@ -69,7 +69,10 @@ async function main() {
     }
 }
 
-main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-});
+module.exports = (yargs) => {
+    yargs.command({
+        command: 'download',
+        describe: 'Download media files from an HTML file',
+        handler: main,
+    });
+};
