@@ -9,7 +9,7 @@ const replace = require('replace-in-file');
 const argv = require('yargs').argv;
 
 const configPath = path.resolve(argv.config || './config.js');
-const config = require(configPath);
+const config = require(path.resolve(process.cwd(), configPath));
 
 const downloadFile = promisify((url, destPath, cb) => {
     const file = fs.createWriteStream(destPath);
@@ -40,7 +40,7 @@ const downloadFile = promisify((url, destPath, cb) => {
 
 async function replaceUrls() {
     // Read the HTML file
-    const htmlPath = path.resolve(__dirname, config.htmlPath);
+    const htmlPath = require(path.resolve(process.cwd(), config.htmlPath));
     const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
     // Parse the HTML using Cheerio
@@ -50,7 +50,7 @@ async function replaceUrls() {
     const mediaElements = $(config.mediaSrcSelector);
 
     // Create the 'medias' directory if it does not exist
-    const mediaDir = path.resolve(__dirname, config.mediaDir);
+    const mediaDir = require(path.resolve(process.cwd(), config.mediaDir));
     if (!fs.existsSync(mediaDir)) {
         fs.mkdirSync(mediaDir);
     }
