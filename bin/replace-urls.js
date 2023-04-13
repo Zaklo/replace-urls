@@ -1,4 +1,4 @@
-#! /usr/bin/env node
+#!/usr/bin/env node
 
 const fs = require('fs');
 const path = require('path');
@@ -38,7 +38,7 @@ const downloadFile = promisify((url, destPath, cb) => {
     request.end();
 });
 
-async function main() {
+async function replaceUrls() {
     // Read the HTML file
     const htmlPath = path.resolve(__dirname, config.htmlPath);
     const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
@@ -73,7 +73,9 @@ async function main() {
     }
 }
 
-main().catch((error) => {
+replaceUrls().catch((error) => {
     console.error(error)
     process.exit(1)
 });
+
+module.exports = replaceUrls;
