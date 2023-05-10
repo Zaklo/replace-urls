@@ -49,17 +49,17 @@ async function replaceUrls() {
     // Find all images and videos with URLs starting with 'https://res.cloudinary.com'
     const mediaElements = $(config.mediaSrcSelector);
 
-    // Find all videos with poster URLs starting with 'https://res.cloudinary.com'
-    const videoElements = $(config.videoPosterSelector);
-
     // Create the 'medias' directory if it does not exist
     const mediaDir = path.resolve(process.cwd(), config.mediaDir);
     if (!fs.existsSync(mediaDir)) {
         fs.mkdirSync(mediaDir);
     }
 
-    // Download all the media files
+    // Download all media elements
+    const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     const downloadPromises = [];
+    const downloadedMedia = [];
+
     for (let i = 0; i < mediaElements.length; i++) {
         const mediaElem = $(mediaElements[i]);
         const mediaSrc = mediaElem.attr('src');
@@ -67,45 +67,31 @@ async function replaceUrls() {
         const mediaFilename = `media_${i}${mediaExt}`;
         const mediaDestPath = path.resolve(mediaDir, mediaFilename);
 
-        downloadPromises.push(downloadFile(mediaSrc, mediaDestPath));
+        downloadedMedia.push(mediaFilename);
+        downloadPromises.push(downloadFile(mediaSrc, mediaDestPath, (percentage) => {
+            progressBar.update(percentage);
+        }));
     }
-    for (let i = 0; i < videoElements.length; i++) {
-        const videoElem = $(videoElements[i]);
-        const videoPoster = videoElem.attr('poster');
-        const posterExt = path.extname(videoPoster);
-        const posterFilename = `poster_${i}${posterExt}`;
-        const posterDestPath = path.resolve(mediaDir, posterFilename);
 
-        downloadPromises.push(downloadFile(videoPoster, posterDestPath));
-    }
+    progressBar.start(100, 0);
     await Promise.all(downloadPromises);
+    progressBar.stop();
 
-    // Replace the URLs in the HTML with the downloaded file paths
+    // Replace all media URLs in the HTML with the downloaded file paths
+    const replacePromises = [];
+
     for (let i = 0; i < mediaElements.length; i++) {
         const mediaElem = $(mediaElements[i]);
         const mediaSrc = mediaElem.attr('src');
-        const mediaExt = path.extname(mediaSrc);
-        const mediaFilename = `media_${i}${mediaExt}`;
+        const mediaFilename = downloadedMedia[i];
+        const mediaPath = `./medias/${mediaFilename}`;
 
-        replace({
-            files: htmlPath,
-            from: mediaSrc,
-            to: `./medias/${mediaFilename}`
-        });
+        replacePromises.push(replace({ files: htmlPath, from: mediaSrc, to: mediaPath }));
     }
-    for (let i = 0; i < videoElements.length; i++) {
-        const videoElem = $(videoElements[i]);
-        const videoPoster = videoElem.attr('poster');
-        const posterExt = path.extname(videoPoster);
-        const posterFilename = `poster_${i}${posterExt}`;
 
-        replace({
-            files: htmlPath,
-            from: videoPoster,
-            to: `./medias/${posterFilename}`
-        });
-    }
+    await Promise.all(replacePromises);
 }
+
 replaceUrls().catch((error) => {
     console.error(error);
     process.exit(1);
