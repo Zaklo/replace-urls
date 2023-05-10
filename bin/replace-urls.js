@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const https = require('https');
 const { promisify } = require('util');
 const cheerio = require('cheerio');
 const replace = require('replace-in-file');
-const argv = require('yargs').argv;
+const yargs = require('yargs');
 const cliProgress = require('cli-progress');
 const chalk = require('chalk');
 
-const configPath = path.resolve(argv.config || './config.js');
+const configPath = path.resolve(yargs.argv.config || './config.js');
 const config = require(path.resolve(process.cwd(), configPath));
 
 const downloadFile = promisify((url, destPath, progressCallback, cb) => {
@@ -32,9 +32,8 @@ const downloadFile = promisify((url, destPath, progressCallback, cb) => {
     });
 
     request.on('error', (err) => {
-        fs.unlink(destPath, () => {
-            if (cb) cb(err.message);
-        });
+        fs.unlink(destPath).catch(() => {});
+        if (cb) cb(err.message);
     });
 
     request.end();
@@ -53,15 +52,13 @@ function rainbowProgressBar(percentage) {
 
 async function replaceUrls() {
     const htmlPath = path.resolve(process.cwd(), config.htmlPath);
-    const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+    const htmlContent = await fs.readFile(htmlPath, 'utf-8');
     const $ = cheerio.load(htmlContent);
 
     const mediaElements = $(config.mediaSrcSelector);
 
     const mediaDir = path.resolve(process.cwd(), config.mediaDir);
-    if (!fs.existsSync(mediaDir)) {
-        fs.mkdirSync(mediaDir);
-    }
+    await fs.mkdir(mediaDir, { recursive: true });
 
     const progressBar = new cliProgress.SingleBar({
         format: `${rainbowProgressBar('{percentage}')}`,
@@ -81,6 +78,7 @@ async function replaceUrls() {
         const mediaDestPath = path.resolve(mediaDir, mediaFilename);
 
         downloadedMedia.push(mediaFilename);
+
         downloadPromises.push(downloadFile(mediaSrc, mediaDestPath, (percentage) => {
             progressBar.update(percentage);
         }));
@@ -89,6 +87,7 @@ async function replaceUrls() {
     progressBar.start(100, 0);
 
     await Promise.all(downloadPromises);
+
     progressBar.stop();
 
     const replacePromises = [];
