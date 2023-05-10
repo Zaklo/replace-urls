@@ -46,8 +46,9 @@ function rainbowProgressBar(percentage) {
     const numOfRainbowSections = rainbowColors.length - 1;
     const numOfFullSections = Math.floor(percentage / (100 / numOfRainbowSections));
     const currentRainbowSectionPercentage = (percentage % (100 / numOfRainbowSections)) / (100 / numOfRainbowSections);
-    const currentRainbowColor = chalk[rainbowColors[numOfFullSections]].bold;
-    return `[${currentRainbowColor('#'.repeat(Math.floor(numOfBars * currentRainbowSectionPercentage)).padEnd(numOfBars, ' '))}]`;
+    const currentRainbowColor = chalk[rainbowColors[numOfFullSections]];
+    const progressBar = '#'.repeat(Math.floor(numOfBars * currentRainbowSectionPercentage)).padEnd(numOfBars, ' ');
+    return `[${currentRainbowColor ? currentRainbowColor.bold(progressBar) : progressBar}]`;
 }
 
 async function replaceUrls() {
