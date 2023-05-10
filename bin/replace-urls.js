@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const fs = require('fs').promises;
+const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const { promisify } = require('util');
@@ -8,10 +8,20 @@ const cheerio = require('cheerio');
 const replace = require('replace-in-file');
 const yargs = require('yargs');
 const cliProgress = require('cli-progress');
-const chalk = require('chalk');
 
-const configPath = path.resolve(yargs.argv.config || './config.js');
-const config = require(path.resolve(process.cwd(), configPath));
+const argv = yargs
+    .option('config', {
+        alias: 'c',
+        description: 'Path to configuration file',
+        type: 'string',
+        default: './config.js',
+    })
+    .help()
+    .alias('help', 'h')
+    .argv;
+
+const configPath = path.resolve(argv.config);
+const config = require(configPath);
 
 const downloadFile = promisify((url, destPath, progressCallback, cb) => {
     const file = fs.createWriteStream(destPath);
@@ -32,41 +42,33 @@ const downloadFile = promisify((url, destPath, progressCallback, cb) => {
     });
 
     request.on('error', (err) => {
-        fs.unlink(destPath).catch(() => {});
+        fs.unlink(destPath, () => {});
         if (cb) cb(err.message);
     });
 
     request.end();
 });
 
-function rainbowProgressBar(percentage) {
-    const rainbowColors = ['red', 'yellow', 'green', 'blue', 'magenta'];
-    const numOfBars = 20;
-    const numOfRainbowSections = rainbowColors.length - 1;
-    const numOfFullSections = Math.floor(percentage / (100 / numOfRainbowSections));
-    const currentRainbowSectionPercentage = (percentage % (100 / numOfRainbowSections)) / (100 / numOfRainbowSections);
-    const currentRainbowColor = chalk[rainbowColors[numOfFullSections]];
-    const progressBar = '#'.repeat(Math.floor(numOfBars * currentRainbowSectionPercentage)).padEnd(numOfBars, ' ');
-    return `[${currentRainbowColor ? currentRainbowColor.bold(progressBar) : progressBar}]`;
-}
-
 async function replaceUrls() {
+    // Read the HTML file
     const htmlPath = path.resolve(process.cwd(), config.htmlPath);
-    const htmlContent = await fs.readFile(htmlPath, 'utf-8');
+    const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+
+    // Parse the HTML using Cheerio
     const $ = cheerio.load(htmlContent);
 
+    // Find all images with URLs starting with 'https://res.cloudinary.com'
     const mediaElements = $(config.mediaSrcSelector);
+    console.log(`Found ${mediaElements.length} media elements.`);
 
+    // Create the 'medias' directory if it does not exist
     const mediaDir = path.resolve(process.cwd(), config.mediaDir);
-    await fs.mkdir(mediaDir, { recursive: true });
+    if (!fs.existsSync(mediaDir)) {
+        fs.mkdirSync(mediaDir);
+    }
 
-    const progressBar = new cliProgress.SingleBar({
-        format: `${rainbowProgressBar('{percentage}')}`,
-        barCompleteChar: '\u2588',
-        barIncompleteChar: '\u2591',
-        hideCursor: true
-    });
-
+    // Download all media elements
+    const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     const downloadPromises = [];
     const downloadedMedia = [];
 
@@ -78,18 +80,16 @@ async function replaceUrls() {
         const mediaDestPath = path.resolve(mediaDir, mediaFilename);
 
         downloadedMedia.push(mediaFilename);
-
         downloadPromises.push(downloadFile(mediaSrc, mediaDestPath, (percentage) => {
             progressBar.update(percentage);
         }));
     }
 
     progressBar.start(100, 0);
-
     await Promise.all(downloadPromises);
-
     progressBar.stop();
 
+    // Replace all media URLs in the HTML with the downloaded file paths
     const replacePromises = [];
 
     for (let i = 0; i < mediaElements.length; i++) {
@@ -97,8 +97,9 @@ async function replaceUrls() {
         const mediaSrc = mediaElem.attr('src');
         const mediaFilename = downloadedMedia[i];
         const mediaPath = `./medias/${mediaFilename}`;
+        console.log(`Replacing ${mediaSrc} with ${mediaPath}.`);
 
-        replacePromises.push(replace({ files: htmlPath, from: mediaSrc, to: mediaPath }));
+        replacePromises.push(replace({files: htmlPath, from: new RegExp(mediaSrc, 'g'), to: mediaPath}));
     }
 
     await Promise.all(replacePromises);
@@ -109,4 +110,4 @@ replaceUrls().catch((error) => {
     process.exit(1);
 });
 
-module.exports = replaceUrls
+module.exports = replaceUrls;
