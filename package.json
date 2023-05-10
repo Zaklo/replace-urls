@@ -1,6 +1,6 @@
 {
   "name": "replace-urls",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "",
   "bin": {
     "replace-urls": "/bin/replace-urls.js"
@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
+    "cli-progress": "^3.12.0",
     "replace-in-file": "^6.3.5",
     "yargs": "^17.7.1"
   }

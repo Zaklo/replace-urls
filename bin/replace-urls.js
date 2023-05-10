@@ -7,21 +7,21 @@ const { promisify } = require('util');
 const cheerio = require('cheerio');
 const replace = require('replace-in-file');
 const argv = require('yargs').argv;
+const cliProgress = require('cli-progress');
 
 const configPath = path.resolve(argv.config || './config.js');
 const config = require(path.resolve(process.cwd(), configPath));
 
-const downloadFile = promisify((url, destPath, cb) => {
+const downloadFile = promisify((url, destPath, progressCallback, cb) => {
     const file = fs.createWriteStream(destPath);
     const request = https.request(url, (response) => {
-        const totalSize = response.headers['content-length'];
+        const totalSize = parseInt(response.headers['content-length'], 10);
         let downloadedSize = 0;
 
         response.on('data', (chunk) => {
             downloadedSize += chunk.length;
             const percentage = (downloadedSize / totalSize) * 100;
-            const progress = `[${'#'.repeat(Math.floor(percentage / 10)).padEnd(10)}] ${percentage.toFixed(1)}%`;
-            process.stdout.write(`\r${progress}`);
+            progressCallback(percentage);
         });
 
         response.pipe(file);
@@ -55,7 +55,11 @@ async function replaceUrls() {
         fs.mkdirSync(mediaDir);
     }
 
-    // Download and replace the URLs of each media element
+    // Download all media elements
+    const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+    const downloadPromises = [];
+    const downloadedMedia = [];
+
     for (let i = 0; i < mediaElements.length; i++) {
         const mediaElem = $(mediaElements[i]);
         const mediaSrc = mediaElem.attr('src');
@@ -63,19 +67,34 @@ async function replaceUrls() {
         const mediaFilename = `media_${i}${mediaExt}`;
         const mediaDestPath = path.resolve(mediaDir, mediaFilename);
 
-        console.log('Downloading images...')
-        // Download the file
-        await downloadFile(mediaSrc, mediaDestPath);
-
-        console.log('Replacing URLs...')
-        // Replace the URL in the HTML with the downloaded file path
-        replace({files: htmlPath, from: mediaSrc, to: `./medias/${mediaFilename}`});
+        downloadedMedia.push(mediaFilename);
+        downloadPromises.push(downloadFile(mediaSrc, mediaDestPath, (percentage) => {
+            progressBar.update(percentage);
+        }));
     }
+
+    progressBar.start(100, 0);
+    await Promise.all(downloadPromises);
+    progressBar.stop();
+
+    // Replace all media URLs in the HTML with the downloaded file paths
+    const replacePromises = [];
+
+    for (let i = 0; i < mediaElements.length; i++) {
+        const mediaElem = $(mediaElements[i]);
+        const mediaSrc = mediaElem.attr('src');
+        const mediaFilename = downloadedMedia[i];
+        const mediaPath = `./medias/${mediaFilename}`;
+
+        replacePromises.push(replace({ files: htmlPath, from: mediaSrc, to: mediaPath }));
+    }
+
+    await Promise.all(replacePromises);
 }
 
 replaceUrls().catch((error) => {
-    console.error(error)
-    process.exit(1)
+    console.error(error);
+    process.exit(1);
 });
 
-module.exports = replaceUrls;
+module.exports = replaceUrls
