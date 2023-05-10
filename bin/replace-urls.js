@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 const replace = require('replace-in-file');
 const argv = require('yargs').argv;
 const cliProgress = require('cli-progress');
-const chalk = require('chalk');
+import chalk from 'chalk';
 
 const configPath = path.resolve(argv.config || './config.js');
 const config = require(path.resolve(process.cwd(), configPath));
