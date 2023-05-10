@@ -3,11 +3,12 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { promisify } = require('util');
+const {promisify} = require('util');
 const cheerio = require('cheerio');
 const replace = require('replace-in-file');
 const argv = require('yargs').argv;
 const cliProgress = require('cli-progress');
+const chalk = require('chalk');
 
 const configPath = path.resolve(argv.config || './config.js');
 const config = require(path.resolve(process.cwd(), configPath));
@@ -31,32 +32,43 @@ const downloadFile = promisify((url, destPath, progressCallback, cb) => {
     });
 
     request.on('error', (err) => {
-        fs.unlink(destPath);
-        if (cb) cb(err.message);
+        fs.unlink(destPath, () => {
+            if (cb) cb(err.message);
+        });
     });
 
     request.end();
 });
 
+function rainbowProgressBar(percentage) {
+    const rainbowColors = ['red', 'yellow', 'green', 'blue', 'magenta'];
+    const numOfBars = 20;
+    const numOfRainbowSections = rainbowColors.length - 1;
+    const numOfFullSections = Math.floor(percentage / (100 / numOfRainbowSections));
+    const currentRainbowSectionPercentage = (percentage % (100 / numOfRainbowSections)) / (100 / numOfRainbowSections);
+    const currentRainbowColor = chalk[rainbowColors[numOfFullSections]].bold;
+    return `[${currentRainbowColor('#'.repeat(Math.floor(numOfBars * currentRainbowSectionPercentage)).padEnd(numOfBars, ' '))}]`;
+}
+
 async function replaceUrls() {
-    // Read the HTML file
     const htmlPath = path.resolve(process.cwd(), config.htmlPath);
     const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
-
-    // Parse the HTML using Cheerio
     const $ = cheerio.load(htmlContent);
 
-    // Find all images and videos with URLs starting with 'https://res.cloudinary.com'
     const mediaElements = $(config.mediaSrcSelector);
 
-    // Create the 'medias' directory if it does not exist
     const mediaDir = path.resolve(process.cwd(), config.mediaDir);
     if (!fs.existsSync(mediaDir)) {
         fs.mkdirSync(mediaDir);
     }
 
-    // Download all media elements
-    const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+    const progressBar = new cliProgress.SingleBar({
+        format: `${rainbowProgressBar('{percentage}')}`,
+        barCompleteChar: '\u2588',
+        barIncompleteChar: '\u2591',
+        hideCursor: true
+    });
+
     const downloadPromises = [];
     const downloadedMedia = [];
 
@@ -74,10 +86,10 @@ async function replaceUrls() {
     }
 
     progressBar.start(100, 0);
+
     await Promise.all(downloadPromises);
     progressBar.stop();
 
-    // Replace all media URLs in the HTML with the downloaded file paths
     const replacePromises = [];
 
     for (let i = 0; i < mediaElements.length; i++) {
@@ -86,7 +98,7 @@ async function replaceUrls() {
         const mediaFilename = downloadedMedia[i];
         const mediaPath = `./medias/${mediaFilename}`;
 
-        replacePromises.push(replace({ files: htmlPath, from: mediaSrc, to: mediaPath }));
+        replacePromises.push(replace({files: htmlPath, from: mediaSrc, to: mediaPath}));
     }
 
     await Promise.all(replacePromises);
