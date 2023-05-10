@@ -3,12 +3,12 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const {promisify} = require('util');
+const { promisify } = require('util');
 const cheerio = require('cheerio');
 const replace = require('replace-in-file');
 const argv = require('yargs').argv;
 const cliProgress = require('cli-progress');
-import chalk from 'chalk';
+const chalk = require('chalk');
 
 const configPath = path.resolve(argv.config || './config.js');
 const config = require(path.resolve(process.cwd(), configPath));
@@ -98,7 +98,7 @@ async function replaceUrls() {
         const mediaFilename = downloadedMedia[i];
         const mediaPath = `./medias/${mediaFilename}`;
 
-        replacePromises.push(replace({files: htmlPath, from: mediaSrc, to: mediaPath}));
+        replacePromises.push(replace({ files: htmlPath, from: mediaSrc, to: mediaPath }));
     }
 
     await Promise.all(replacePromises);
